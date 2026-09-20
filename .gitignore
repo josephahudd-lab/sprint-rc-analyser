@@ -1,0 +1,21 @@
+# Scratch & temporary test files
+*.png
+*.jpg
+*.jpeg
+*.pdf
+*.bat
+test_*.js
+test_*.py
+check_*.js
+check_*.py
+inspect_*.js
+extract_*.js
+find_*.py
+sim_*.py
+exported_test.html
+github_exported.html
+
+# Node / OS
+node_modules/
+.DS_Store
+Thumbs.db
