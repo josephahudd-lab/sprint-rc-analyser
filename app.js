@@ -741,31 +741,35 @@
         }`;
 
         const climbVal = (v.climb !== undefined && v.climb !== null) ? v.climb : 0;
+        const hasClimb = climbVal > 0;
 
         item.innerHTML = `
           <div class="flex items-center gap-1.5 min-w-0">
             <!-- My Route Checkbox -->
             <label class="flex items-center cursor-pointer shrink-0" title="Tick if this is the route you took on this leg">
-              <input type="checkbox" class="take-route-checkbox accent-indigo-600 rounded cursor-pointer" data-id="${v.id}" ${isTaken ? 'checked' : ''}>
+              <input type="checkbox" class="take-route-checkbox accent-indigo-600 rounded cursor-pointer w-3.5 h-3.5" data-id="${v.id}" ${isTaken ? 'checked' : ''}>
             </label>
             <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${v.color};"></span>
             <span class="font-bold text-slate-800 shrink-0">${v.name}</span>
             <span class="font-mono text-slate-600 font-semibold shrink-0">${len.toFixed(0)}m</span>
-            <!-- Inline editable climb -->
-            <label class="flex items-center gap-0.5 px-1 py-0.5 rounded bg-white border border-slate-200 text-[10px] text-slate-600 font-medium shrink-0 cursor-text" title="Elevation gain / climb in meters. Click to edit.">
-              <span class="text-amber-600 text-[10px] font-bold">↗+</span>
-              <input type="number" min="0" max="999" step="1" value="${climbVal}" data-id="${v.id}" class="variant-climb-input w-8 text-center font-mono font-bold text-xs bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-400 rounded p-0 text-slate-700">
-              <span class="text-slate-400 text-[10px]">m</span>
+            <!-- Compact Climb Pill -->
+            <label class="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[10px] font-mono shrink-0 cursor-text ${
+              hasClimb ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200/70'
+            }" title="Climb / height in meters. Click to edit.">
+              <span class="${hasClimb ? 'text-amber-600 font-bold' : 'text-slate-400'}">↗</span>
+              <input type="number" min="0" max="999" step="1" value="${climbVal}" data-id="${v.id}" class="variant-climb-input w-6 text-center font-bold bg-transparent focus:outline-none focus:bg-white rounded p-0 ${
+                hasClimb ? 'text-amber-900' : 'text-slate-600'
+              }">
+              <span class="${hasClimb ? 'text-amber-700' : 'text-slate-400'}">m</span>
             </label>
-            ${isTaken ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-600 text-white uppercase tracking-wider shrink-0">My Route</span>' : ''}
           </div>
-          <div class="flex items-center gap-1.5 shrink-0">
+          <div class="flex items-center gap-1.5 shrink-0 ml-1">
             <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${
               isOptimal ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
             }">
               ${isOptimal ? 'Fastest' : `+${diffPercent.toFixed(1)}%`}
             </span>
-            <button class="delete-variant-btn text-slate-400 hover:text-red-600 font-bold p-1 cursor-pointer" title="Delete variant" data-id="${v.id}">
+            <button class="delete-variant-btn text-slate-400 hover:text-red-600 font-bold p-1 cursor-pointer leading-none" title="Delete variant" data-id="${v.id}">
               ✕
             </button>
           </div>
