@@ -387,10 +387,23 @@
               </div>
             </div>
 
-            <!-- Live meter measurement readout -->
-            <div class="flex justify-between items-center py-1.5 px-3 bg-slate-50 rounded-lg border border-slate-200">
-              <span class="text-xs text-slate-600">Route Length:</span>
-              <span id="liveRouteDistText" class="font-mono font-bold text-sm text-blue-700">0.0 m</span>
+            <!-- Live meter measurement & height / climb readout -->
+            <div class="grid grid-cols-2 gap-2">
+              <div class="flex flex-col justify-center py-1.5 px-3 bg-slate-50 rounded-lg border border-slate-200">
+                <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Route Length</span>
+                <span id="liveRouteDistText" class="font-mono font-bold text-sm text-blue-700 mt-0.5">0.0 m</span>
+              </div>
+              <div class="flex flex-col justify-center py-1.5 px-3 bg-slate-50 rounded-lg border border-slate-200">
+                <label for="routeClimbInput" class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                  <span>Height / Climb</span>
+                  <span class="text-slate-400 font-normal">meters</span>
+                </label>
+                <div class="flex items-center gap-1 mt-0.5">
+                  <span class="text-xs font-bold text-amber-600">↗ +</span>
+                  <input type="number" id="routeClimbInput" min="0" max="999" step="1" value="0" placeholder="0" class="w-full text-sm font-mono font-bold text-slate-800 bg-transparent focus:outline-none border-b border-transparent focus:border-blue-500 py-0" title="Total elevation gain / climb in meters for this routechoice">
+                  <span class="text-xs font-semibold text-slate-500">m</span>
+                </div>
+              </div>
             </div>
 
             <!-- Drawing Action Buttons -->

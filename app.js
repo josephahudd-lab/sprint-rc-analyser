@@ -144,6 +144,7 @@
   const activeRouteColorDot = document.getElementById('activeRouteColorDot');
   const activeRouteNameLabel = document.getElementById('activeRouteNameLabel');
   const liveRouteDistText = document.getElementById('liveRouteDistText');
+  const routeClimbInput = document.getElementById('routeClimbInput');
   const undoRoutePointBtn = document.getElementById('undoRoutePointBtn');
   const saveRouteBtn = document.getElementById('saveRouteBtn');
   const variantsListContainer = document.getElementById('variantsListContainer');
@@ -474,7 +475,8 @@
 
         // Badge pill background
         const lengthText = `${polylineLengthMeters(variant.points).toFixed(0)}m`;
-        const text = isTaken ? `✓ ${variant.name} (${lengthText}) [My Route]` : `${variant.name} (${lengthText})`;
+        const climbText = (variant.climb && variant.climb > 0) ? `, +${variant.climb}m` : '';
+        const text = isTaken ? `✓ ${variant.name} (${lengthText}${climbText}) [My Route]` : `${variant.name} (${lengthText}${climbText})`;
         const metrics = ctx.measureText(text);
         const padX = 7 / state.view.zoom;
         const padY = 4 / state.view.zoom;
@@ -738,18 +740,26 @@
           isTaken ? 'bg-indigo-50 border-indigo-300 ring-1 ring-indigo-400' : 'bg-slate-50 border-slate-200'
         }`;
 
+        const climbVal = (v.climb !== undefined && v.climb !== null) ? v.climb : 0;
+
         item.innerHTML = `
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1.5 min-w-0">
             <!-- My Route Checkbox -->
-            <label class="flex items-center cursor-pointer" title="Tick if this is the route you took on this leg">
+            <label class="flex items-center cursor-pointer shrink-0" title="Tick if this is the route you took on this leg">
               <input type="checkbox" class="take-route-checkbox accent-indigo-600 rounded cursor-pointer" data-id="${v.id}" ${isTaken ? 'checked' : ''}>
             </label>
-            <span class="w-3 h-3 rounded-full shrink-0" style="background-color: ${v.color};"></span>
-            <span class="font-bold text-slate-800">${v.name}</span>
-            <span class="font-mono text-slate-600 font-semibold">${len.toFixed(0)}m</span>
-            ${isTaken ? '<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-indigo-600 text-white uppercase tracking-wider">My Route</span>' : ''}
+            <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${v.color};"></span>
+            <span class="font-bold text-slate-800 shrink-0">${v.name}</span>
+            <span class="font-mono text-slate-600 font-semibold shrink-0">${len.toFixed(0)}m</span>
+            <!-- Inline editable climb -->
+            <label class="flex items-center gap-0.5 px-1 py-0.5 rounded bg-white border border-slate-200 text-[10px] text-slate-600 font-medium shrink-0 cursor-text" title="Elevation gain / climb in meters. Click to edit.">
+              <span class="text-amber-600 text-[10px] font-bold">↗+</span>
+              <input type="number" min="0" max="999" step="1" value="${climbVal}" data-id="${v.id}" class="variant-climb-input w-8 text-center font-mono font-bold text-xs bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-400 rounded p-0 text-slate-700">
+              <span class="text-slate-400 text-[10px]">m</span>
+            </label>
+            ${isTaken ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-600 text-white uppercase tracking-wider shrink-0">My Route</span>' : ''}
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1.5 shrink-0">
             <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${
               isOptimal ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
             }">
@@ -761,6 +771,19 @@
           </div>
         `;
         variantsListContainer.appendChild(item);
+      });
+
+      // Attach inline climb change listeners
+      variantsListContainer.querySelectorAll('.variant-climb-input').forEach((input) => {
+        input.addEventListener('change', (e) => {
+          const id = Number(e.currentTarget.dataset.id);
+          const val = Math.max(0, parseInt(e.currentTarget.value, 10) || 0);
+          const found = state.variants.find((v) => v.id === id);
+          if (found) {
+            found.climb = val;
+            render();
+          }
+        });
       });
 
       // Attach 'My Route' checkbox toggles
@@ -1768,17 +1791,20 @@
 
     const nextColor = getNextVariantColor();
     const nextName = getNextVariantName();
+    const climbMeters = routeClimbInput ? Math.max(0, parseInt(routeClimbInput.value, 10) || 0) : 0;
 
     state.variants.push({
       id: Date.now(),
       legIndex: state.selectedLegIndex,
       name: nextName,
       color: nextColor.hex,
-      points: [...state.activeDrawing]
+      points: [...state.activeDrawing],
+      climb: climbMeters
     });
 
-    // Reset active drawing
+    // Reset active drawing & climb input
     state.activeDrawing = [];
+    if (routeClimbInput) routeClimbInput.value = '0';
     updateLiveDrawingStats();
     updateVariantsList();
     render();
@@ -3063,6 +3089,14 @@ ${JSON.stringify(embeddedProject).replace(/<\/script/gi, '<\\/script')}
       background-color: rgba(239,68,68,0.16);
       color: #f87171;
     }
+    .pill-climb {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background-color: rgba(245, 158, 11, 0.18);
+      color: #f59e0b;
+    }
 
     /* Notes Box */
     .notes-section {
@@ -3834,6 +3868,7 @@ ${JSON.stringify(embeddedProject).replace(/<\/script/gi, '<\\/script')}
           card.className = 'card-route' + (isTaken ? ' taken' : '') + (isFocused ? ' focused' : '');
 
           const displayName = hideOptionLabels ? ('Route ' + (idx + 1)) : v.name;
+          const climbBadge = (v.climb && v.climb > 0) ? ('<span class="pill-climb">+' + v.climb + 'm↗</span>') : '';
 
           card.innerHTML = 
             '<div class="route-left">' +
@@ -3843,6 +3878,7 @@ ${JSON.stringify(embeddedProject).replace(/<\/script/gi, '<\\/script')}
             '</div>' +
             '<div class="route-right">' +
               '<span class="route-dist">' + m.toFixed(0) + 'm</span>' +
+              climbBadge +
               (isFastest ? '<span class="pill-fastest">Fastest</span>' : (showDiff ? '<span class="pill-diff">+' + diff.toFixed(1) + '%</span>' : '')) +
             '</div>';
 
@@ -3985,7 +4021,8 @@ ${JSON.stringify(embeddedProject).replace(/<\/script/gi, '<\\/script')}
         // Distance label pill on map
         if (showBadges) {
           const mid = v.points[Math.floor(v.points.length / 2)];
-          const distM = polyMeters(v.points).toFixed(0) + 'm';
+          const climbSuffix = (v.climb && v.climb > 0) ? (', +' + v.climb + 'm') : '';
+          const distM = polyMeters(v.points).toFixed(0) + 'm' + climbSuffix;
           const txt = hideOptionLabels ? distM : (v.name + ' (' + distM + ')');
           const fSize = Math.max(13, 16 / viewZoom);
           ctx.font = 'bold ' + fSize + 'px sans-serif';
@@ -4256,14 +4293,16 @@ ${JSON.stringify(embeddedProject).replace(/<\/script/gi, '<\\/script')}
           tooltip.className = 'leg-dot-tooltip';
 
           let ttContent = '<div class="tt-header">' + st.leg.label + '</div>';
+          const fastestClimb = (st.fastestVar && st.fastestVar.climb > 0) ? (', +' + st.fastestVar.climb + 'm') : '';
           if (!st.hasRoutes) {
             ttContent += '<div class="tt-row"><span class="tt-label">Status:</span> <span class="tt-val">No routes</span></div>';
           } else if (!st.hasTaken) {
             ttContent += '<div class="tt-row"><span class="tt-label">Choice:</span> <span class="tt-val" style="opacity: 0.6;">Not marked</span></div>';
-            ttContent += '<div class="tt-row"><span class="tt-label">Fastest:</span> <span class="tt-val">' + (st.fastestVar ? st.fastestVar.name : 'Option') + ' (' + st.minLen.toFixed(0) + 'm)</span></div>';
+            ttContent += '<div class="tt-row"><span class="tt-label">Fastest:</span> <span class="tt-val">' + (st.fastestVar ? st.fastestVar.name : 'Option') + ' (' + st.minLen.toFixed(0) + 'm' + fastestClimb + ')</span></div>';
           } else {
-            ttContent += '<div class="tt-row"><span class="tt-label">Choice:</span> <span class="tt-val">' + st.takenVar.name + ' (' + st.takenLen.toFixed(0) + 'm)</span></div>';
-            ttContent += '<div class="tt-row"><span class="tt-label">Fastest:</span> <span class="tt-val">' + (st.fastestVar ? st.fastestVar.name : 'Option') + ' (' + st.minLen.toFixed(0) + 'm)</span></div>';
+            const takenClimb = (st.takenVar && st.takenVar.climb > 0) ? (', +' + st.takenVar.climb + 'm') : '';
+            ttContent += '<div class="tt-row"><span class="tt-label">Choice:</span> <span class="tt-val">' + st.takenVar.name + ' (' + st.takenLen.toFixed(0) + 'm' + takenClimb + ')</span></div>';
+            ttContent += '<div class="tt-row"><span class="tt-label">Fastest:</span> <span class="tt-val">' + (st.fastestVar ? st.fastestVar.name : 'Option') + ' (' + st.minLen.toFixed(0) + 'm' + fastestClimb + ')</span></div>';
 
             let lossFormatted = '';
             if (st.statusColor === 'green') {
